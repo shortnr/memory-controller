@@ -44,7 +44,7 @@ void queue::add(char * line_in)
 void queue::display_all()
 {
     cout << "in display_all\n";
-    node temp = head;
+    node * temp = head;
     if(temp == NULL)
         cout << "temp is null\n";
     int x = 0;

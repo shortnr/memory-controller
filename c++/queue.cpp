@@ -18,40 +18,39 @@ queue::~queue()
     }
 }
 
-void queue::add(char * line_in)
+void queue::add(int time, int cmd, char * address)
 {
-	if(head == NULL)
-	{
-		head = new node;
-		head->line = new char[strlen(line_in) + 1];
-		strcpy(head->line, line_in);
-		head->next = NULL;
-        cout << "head: " << head->line << "\n" ;
-	}
-	else
-	{
-		node * current = head;
-   		while(current->next != NULL)
-        	current = current->next;
+    if(head == NULL)
+    {
+        head = new node;
+	head->time = time;
+	head->cmd = cmd;
+        head->address = new char[strlen(address) + 1];
+	strcpy(head->address, address);
+	head->next = NULL;
+    }
+    else
+    {
+        node * current = head;
+        while(current->next != NULL)
+            current = current->next;
     	current->next = new node;
     	current = current->next;
-    	current->line = new char[strlen(line_in) + 1];
-    	strcpy(current->line, line_in);
+	current->time = time;
+	current->cmd = cmd;
+    	current->address = new char[strlen(address) + 1];
+    	strcpy(current->address, address);
     	current->next = NULL;
-        cout << "else: " << current->line << "\n";
-	}
+    }
 }
+
 void queue::display_all()
 {
-    cout << "in display_all\n";
     node * temp = head;
-    if(temp == NULL)
-        cout << "temp is null\n";
-    int x = 0;
+    cout << "display all function\n";
     while(temp != NULL)
     {
-        cout << x << "\t" << temp->line << "\n";
-        ++x;
+        cout << "time: " << temp->time << " cmd: " << temp->cmd << " address: " << temp->address << "\n";
         temp = temp->next;
     }
 }

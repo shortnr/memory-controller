@@ -6,7 +6,9 @@ using namespace std;
 
 struct node
 {
-	char * line;
+	int time;
+	int cmd;
+	char * address;
 	node * next = NULL;
 };
 
@@ -14,7 +16,7 @@ class queue
 {
 public:
 	queue();
-	void add(char * line_in);
+	void add(int time, int cmd, char * address);
 	void display_all();
 	~queue();
 

@@ -9,7 +9,7 @@ int main()
     FILE *fp;
     int cycle=-1;
     int op=-1;
-    char addrs[1024];
+    unsigned long addrs;
     char buff[1024];
 //    signed int addr= 0x10FF97000;
 //
@@ -46,11 +46,10 @@ int main()
 
         fscanf(fp,"%s",buff);
 
-        for(int j=0; j<strlen(buff); j++){
-            addrs[j] = buff[j];
-        }
+		
+		addrs = strtoul(buff,0,16);
 
-        printf("Address: %s\n\n",addrs);
+        printf("Address: %08X\n\n\n",addrs);
     }
 
     fclose(fp);

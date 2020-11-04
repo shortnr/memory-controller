@@ -8,7 +8,7 @@ struct node
 {
 	int time;
 	int cmd;
-	char * address;
+	unsigned long address;
 	node * next = NULL;
 };
 
@@ -16,7 +16,7 @@ class queue
 {
 public:
 	queue();
-	void add(int time, int cmd, char * address);
+	void add(int time, int cmd, unsigned long address);
 	void display_all();
 	~queue();
 

@@ -18,16 +18,15 @@ queue::~queue()
     }
 }
 
-void queue::add(int time, int cmd, char * address)
+void queue::add(int time, int cmd, unsigned long address)
 {
     if(head == NULL)
     {
         head = new node;
-	head->time = time;
-	head->cmd = cmd;
-        head->address = new char[strlen(address) + 1];
-	strcpy(head->address, address);
-	head->next = NULL;
+	    head->time = time;
+	    head->cmd = cmd;
+        head->address = address;
+	    head->next = NULL;
     }
     else
     {
@@ -36,10 +35,9 @@ void queue::add(int time, int cmd, char * address)
             current = current->next;
     	current->next = new node;
     	current = current->next;
-	current->time = time;
-	current->cmd = cmd;
-    	current->address = new char[strlen(address) + 1];
-    	strcpy(current->address, address);
+	    current->time = time;
+	    current->cmd = cmd;
+    	current->address = address;
     	current->next = NULL;
     }
 }

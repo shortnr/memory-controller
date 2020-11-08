@@ -72,6 +72,8 @@ int main(int argc, char *argv[])
     }
 
     //printf("input: %s\noutput: %s\ndflag: %d\n",ifile_name,ofile_name,dflag);
+	
+/********************************-----------------------------------------------------------------------------********************************/
 
     FILE *ifp;       //input file pointer
     FILE *ofp;       //output file pointer

@@ -79,7 +79,8 @@ int main(int argc, char *argv[])
     FILE *ofp;       //output file pointer
     int cycle=-1, op=-1;    //cycle will hold the time of an instruction and op will hold the type of instruction
     char cmd[64];           //Used in Switch/Case to determine the commands name (READ, WRITE, FETCH)
-    unsigned long addrs;    //addrs will hold the hexadecimal address value
+    long long addrs;    //addrs will hold the hexadecimal address value
+	char buff[1024];
 
     ifp = fopen(ifile_name,"r");
 
@@ -87,9 +88,17 @@ int main(int argc, char *argv[])
         cout << "Error: Couldn't open input file\n" << endl;
         exit(-1);
     }
+	
+	ofp = fopen(ofile_name,"w");
+	
+	if(ofp==NULL){
+        cout << "Error: Couldn't open output file\n" << endl;
+		fclose(ifp);
+        exit(-1);
+    }
 
     //While() loop parses the inputs from a file (Cycle, Operation, and Address)
-    while(fscanf(ifp,"%d %d %X",&cycle,&op,&addrs)!=EOF){
+    while(fscanf(ifp,"%d %d 0x%llX",&cycle,&op,&addrs)!=EOF){
         //if statement below checks the validity of operation digit.
         if((op>2) || (op<0)){
             printf("Error: Invalid Operation at Time %d\n",cycle);
@@ -106,13 +115,16 @@ int main(int argc, char *argv[])
             case 2: strcpy(cmd,"Instruction FETCH");
                     break;
         }
+		
 
         if(dflag==1){ //if debugging flag (-d) is present, then print parsed inputs.
-            printf("Time: %d\nOperation: %d (%s)\nAddress: 0x%08X\n\n",cycle,op,cmd,addrs);
-        }
+            printf("Time: %d\nOperation: %d (%s)\nAddress: 0x%09llX\n\n",cycle,op,cmd,addrs);
+
+		}
 
     }//end of while loop
 
     fclose(ifp); //close the input file
+	fclose(ofp); //close the output file
     return 0;
 }

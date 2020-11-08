@@ -80,7 +80,6 @@ int main(int argc, char *argv[])
     int cycle=-1, op=-1;    //cycle will hold the time of an instruction and op will hold the type of instruction
     char cmd[64];           //Used in Switch/Case to determine the commands name (READ, WRITE, FETCH)
     long long addrs;    //addrs will hold the hexadecimal address value
-	char buff[1024];
 
     ifp = fopen(ifile_name,"r");
 

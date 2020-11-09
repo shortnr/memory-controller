@@ -2,8 +2,41 @@
 #include <fstream>
 #include <stdlib.h>
 #include <string.h>
+#include <bitset>
 
 using namespace std;
+
+/*
+ * Struct addmap used to hold the mapped vals from a hex address.
+ * Struct type used by function to return an addmap struct with mapped vals.
+*/
+struct addmap{
+	int row,hcol,bg,bank,lcol;
+};
+
+/*
+ *	mapit(long long addr) - determines and maps the vals of each field 
+ *							and returns a struct of type addmap the holds
+ *							the fields: row, high col, BG, bank, and low col
+ *							
+ *	@param	long long addr - is the full hex address parsed from input file.
+ */
+struct addmap mapit(long long addr){
+	struct addmap mapped;
+		
+	mapped.row = ((addr >> 17));
+	
+	mapped.hcol = ((addr & 0x00001FC00) >> 10);
+	
+	mapped.bg = ((addr & 0x0000000C0) >> 6);
+	
+	mapped.bank = ((addr & 0x000000300) >> 8);
+	
+	mapped.lcol = ((addr & 0x000000038) >> 3);
+	
+	return mapped;
+	
+}
 
 int main(int argc, char *argv[])
 {
@@ -80,6 +113,7 @@ int main(int argc, char *argv[])
     int cycle=-1, op=-1;    //cycle will hold the time of an instruction and op will hold the type of instruction
     char cmd[64];           //Used in Switch/Case to determine the commands name (READ, WRITE, FETCH)
     long long addrs;    //addrs will hold the hexadecimal address value
+	char buff[1024];
 
     ifp = fopen(ifile_name,"r");
 
@@ -115,10 +149,11 @@ int main(int argc, char *argv[])
                     break;
         }
 		
+		struct addmap temp = mapit(addrs);  //temp struct will acquire mapping vals with the function mapit()
 
         if(dflag==1){ //if debugging flag (-d) is present, then print parsed inputs.
-            printf("Time: %d\nOperation: %d (%s)\nAddress: 0x%09llX\n\n",cycle,op,cmd,addrs);
-
+            printf("Time: %d\nOperation: %d (%s)\nAddress: 0x%09llX\n",cycle,op,cmd,addrs);
+			printf("row: %d | Hi_col: %d | BG: %d | Bank: %d | Low_col: %d\n\n",temp.row,temp.hcol,temp.bg,temp.bank,temp.lcol);
 		}
 
     }//end of while loop

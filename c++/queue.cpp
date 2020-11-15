@@ -1,5 +1,5 @@
 #include "queue.h"
-
+#include <stdio.h>
 //this is the constructor
 queue::queue()
 {
@@ -13,7 +13,8 @@ queue::~queue()
     while(head)
     {
         current = head->next;
-        delete head;
+        // delete head;
+        // head = new node;
         head = current;
     }
 }
@@ -45,7 +46,7 @@ void queue::add(int time, int cmd, addmap & temp)
     }
     else
     {
-        node * x = head;
+        node* x = head;
         cout << "Lets check on head again\n";
         printf("Time: %d\nOperation: %d\n",x->time, x->cmd);
         printf("row: %d | Hi_col: %d | BG: %d | Bank: %d | Low_col: %d\n\n", x->row, x->hcol, x->bg, x->bank, x->lcol);

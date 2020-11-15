@@ -11,10 +11,10 @@ using namespace std;
 
 
 /*
- *	mapit(long long addr) - determines and maps the vals of each field 
+ *	mapit(long long addr) - determines and maps the vals of each field
  *							and returns a struct of type addmap the holds
  *							the fields: row, high col, BG, bank, and low col
- *							
+ *
  *	@param	long long addr - is the full hex address parsed from input file.
  */
 struct addmap mapit(long long addr);
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
     }
 
     //printf("input: %s\noutput: %s\ndflag: %d\n",ifile_name,ofile_name,dflag);
-	
+
  /********************************-----------------------------------------------------------------------------********************************/
     queue bg0, bg1, bg2, bg3; // creates 4 queues for each bank group
     struct addmap temp;
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
     int request_time=-1, op=-1;    //request_time will hold the time of an instruction and op will hold the type of instruction
     char cmd[64];           //Used in Switch/Case to determine the commands name (READ, WRITE, FETCH)
     long long addrs;    //addrs will hold the hexadecimal address value
-	char buff[1024];
+	  char buff[1024];
 
     ifp = fopen(ifile_name,"r");
 
@@ -106,12 +106,12 @@ int main(int argc, char *argv[])
         cout << "Error: Couldn't open input file\n" << endl;
         exit(-1);
     }
-	
-	ofp = fopen(ofile_name,"w");
-	
-	if(ofp==NULL){
+
+	 ofp = fopen(ofile_name,"w");
+
+	 if(ofp==NULL){
         cout << "Error: Couldn't open output file\n" << endl;
-		fclose(ifp);
+		    fclose(ifp);
         exit(-1);
     }
 
@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
                 	    break;
             		case 2: strcpy(cmd,"Instruction FETCH");
                 	    break;
-        		}
+        	  }
 				temp = mapit(addrs);  //temp struct will acquire mapping vals with the function mapit()
 				if(dflag==1){ //if debugging flag (-d) is present, then print parsed inputs.
             		printf("Time: %d\nOperation: %d (%s)\nAddress: 0x%09llX\n", request_time, op, cmd, addrs);
@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
 		current_time++;
 	}while(!feof(ifp) || pendingRQ); //|| (queue_total(bg0, bg1, bg2, bg3) != 0) //end of do while loop
 
-    fclose(ifp); //close the input file
+  fclose(ifp); //close the input file
 	fclose(ofp); //close the output file
 
 	bg0.display_all();
@@ -204,10 +204,10 @@ int queue_total(queue bg0, queue bg1, queue bg2, queue bg3)
 }
 
 /*
- *	mapit(long long addr) - determines and maps the vals of each field 
+ *	mapit(long long addr) - determines and maps the vals of each field
  *							and returns a struct of type addmap the holds
  *							the fields: row, high col, BG, bank, and low col
- *							
+ *
  *	@param	long long addr - is the full hex address parsed from input file.
  */
 struct addmap mapit(long long addr){

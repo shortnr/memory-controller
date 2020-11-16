@@ -31,6 +31,10 @@ public:
 private:
 	node * head;
 	int count = 0;
-	//int time_till_avail = 0;
+	int time_till_avail = 0;
+	bool busy = false;
+	bool precharged = false;
+	int active_row;
 	bool remove_all(node * & head);
+
 };

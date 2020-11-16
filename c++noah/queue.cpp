@@ -12,6 +12,7 @@ queue::~queue()
     if(remove_all(head));
 }
 
+//recursive remove all
 bool queue::remove_all(node * & head)
 {
     if(!head) return 0;
@@ -21,12 +22,15 @@ bool queue::remove_all(node * & head)
     return value;
 }
 
+//used to check size of queue
 int queue::size()
 {
     int size = count;
     return size;
 }
 
+//adds one DIMM clock to each item in queue
+//eventually will decrease time_till_avail by 1
 void queue::update_time()
 {
     node * current = head;
@@ -37,7 +41,7 @@ void queue::update_time()
     }
 }
 
-
+//adds item to end of list, plan on doing sorted insert
 void queue::add(int request_time, int time_diff, int cmd, addmap & temp)
 {
     if(head == NULL)
@@ -75,11 +79,12 @@ void queue::add(int request_time, int time_diff, int cmd, addmap & temp)
     }
 }
 
+//used for debugging
 void queue::display_all()
 {
     node * temp = head;
     char cmd[64];           //Used in Switch/Case to determine the commands name (READ, WRITE, FETCH)
-    cout << "\nBank Group " << temp->bg << "'s Queue contains:\n";
+    cout << "\nBank Group " << temp->bg << "'s Queue contains:\n\n";
     while(temp != NULL)
     {
         //Determine the commands name (i.e. op=0 -> Data READ)
@@ -91,7 +96,7 @@ void queue::display_all()
             case 2: strcpy(cmd,"Instruction FETCH");
                     break;
         }
-        printf("request_time: %d CPU clocks\nTime in Queue: %dDIMM clocks\nOperation: %d (%s)\n",temp->request_time, temp->q_time, temp->cmd, cmd);
+        printf("request_time: %d CPU clocks\nTime in Queue: %d DIMM clocks\nOperation: %d (%s)\n",temp->request_time, temp->q_time, temp->cmd, cmd);
         printf("row: %d | Hi_col: %d | BG: %d | Bank: %d | Low_col: %d\n\n",temp->row, temp->hcol, temp->bg, temp->bank, temp->lcol);
         temp = temp->next;
     }

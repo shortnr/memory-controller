@@ -148,11 +148,11 @@ int main(int argc, char *argv[])
 			if(pendingRQ)
 			{
 				if((bg0.size() + bg1.size() + bg2.size() + bg3.size()) == 0) {// all queues are empty
-					current_time = request_time;
+					current_time = request_time; //skip ahead in time
 				}
 				if(current_time >= request_time)
 				{
-					time_diff = current_time - request_time;
+					time_diff = current_time - request_time;//currently saved as CPU clocks..
 					if(temp.bg == 0){
 						bg0.add(request_time, time_diff, op, temp);
 						pendingRQ = false;
@@ -175,6 +175,7 @@ int main(int argc, char *argv[])
 
 		if(current_time % 2 == 0) //DRAMTick
 		{
+			//process_request(); sets queue status registers, writes out when time counts down
 			if(bg0.size())//if size isn't 0
 				bg0.update_time(); //adds one to each item in queue
 			if(bg1.size())//if size isn't 0
@@ -183,7 +184,6 @@ int main(int argc, char *argv[])
 				bg2.update_time(); //adds one to each item in queue
 			if(bg3.size())//if size isn't 0
 				bg3.update_time(); //adds one to each item in queue
-			//process_request();
 		}
 		current_time++;
 		//update timings bg0();

@@ -24,41 +24,44 @@ int main(int argc, char *argv[])
 {
     char ifile_name[64];  //will hold the input file name
     char ofile_name[64];  //will hold the output file name
-    int dflag=0;          //debugging flag. (default 0; debug mode off)
+    bool dflag = false, iarg = false, oarg = false;          //debugging flag. (default 0; debug mode off)
 
     //Checks the number of entered arguments
-    if(argc<5){
-        printf("Error: Missing argument(s)\n\tUse: -i <input_filename> -o <output_filename>\n\tUse: -d flag to enable debug mode\n");
-        exit(-1);
-    }
-    else if(argc>6){
-        printf("Error: Too many arguments\n\tUse: -i <input_filename> -o <output_filename>\n\tUse: -d flag to enable debug mode\n");
-        exit(-1);
-    }
-
-    int i=0;  //loop index
-
-    int iarg=0, oarg=0;  //used to check if -i and -o are present as arguments
-    for(i=1; i<argc;i++){   //This loops check if '-i' and '-o' are present
-        if (strcmp(argv[i],"-i")==0){
-            iarg=1;
+    // if(argc<5 || argc>6) {
+    //     printf("Error: Missing argument(s)\n\tUse: -i <input_filename>"
+    //            " -o <output_filename>\n\tUse: -d flag to enable debug mode\n");
+    //     exit(-1);
+    // }
+    // else if(argc>6) {
+    //     printf("Error: Too many arguments\n\tUse: -i <input_filename>"
+    //            " -o <output_filename>\n\tUse: -d flag to enable debug mode\n");
+    //     exit(-1);
+    // }
+    //
+    for(int i=1; i<argc; i++){ //This loops check if '-i' and '-o' are present
+        if (strcmp(argv[i],"-i")==0) {
+            iarg=true;
         }
-        if (strcmp(argv[i],"-o")==0){
-            oarg=1;
+        if (strcmp(argv[i],"-o")==0) {
+            oarg=true;
         }
     }
 
-    if(iarg==0){
-        printf("Error: Missing '-i <filename>' argument\n\tUse: -i <input_filename> -o <output_filename>\n\tUse: -d flag to enable debug mode\n");
-        exit(-1);
-    }
-    if(oarg==0){
-        printf("Error: Missing '-o <filename>' argument\n\tUse: -i <input_filename> -o <output_filename>\n\tUse: -d flag to enable debug mode\n");
-        exit(-1);
+    // if(iarg==0){
+    //     printf("Error: Missing '-i <filename>' argument\n\tUse: -i <input_filename> -o <output_filename>\n\tUse: -d flag to enable debug mode\n");
+    //     exit(-1);
+    // }
+    // if(oarg==0){
+    //     printf("Error: Missing '-o <filename>' argument\n\tUse: -i <input_filename> -o <output_filename>\n\tUse: -d flag to enable debug mode\n");
+    //     exit(-1);
+    // }
+
+    if ((5 > argc > 6) || !iarg || !oarg) {
+      printf("Error: Invalid arguments.\n\tUse: -i <input_filename> -o <output_filename>\n\tUse: -d flag to enable debug mode\n");
+      exit(-1);
     }
 
-
-    for(i=1; i<argc; i++){
+    for(int i=1; i<argc; i++){
         //Checks for input file name
         if((strcmp(argv[i],"-i")==0)&& (i<(argc-1))){
             if((strcmp(argv[i+1],"-o")!=0)&&(strcmp(argv[i+1],"-d")!=0)){
@@ -107,9 +110,9 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
-	 ofp = fopen(ofile_name,"w");
+	  ofp = fopen(ofile_name,"w");
 
-	 if(ofp==NULL){
+	  if(ofp==NULL){
         cout << "Error: Couldn't open output file\n" << endl;
 		    fclose(ifp);
         exit(-1);

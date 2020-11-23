@@ -11,14 +11,18 @@ using namespace std;
 
 
 /*
- *	mapit(long long addr) - determines and maps the vals of each field
+ *	mapit(long long addr) - determines and maps the vals of each field 
  *							and returns a struct of type addmap the holds
  *							the fields: row, high col, BG, bank, and low col
- *
+ *							
  *	@param	long long addr - is the full hex address parsed from input file.
  */
 struct addmap mapit(long long addr);
 int queue_total(queue bg0, queue bg1, queue bg2, queue bg3); //
+int process_request(addmap temp, int request_time, int op, int current_time, FILE* ofp);
+void write_out(int cmd, addmap temp, int proc_time, FILE* ofp);
+
+
 
 int main(int argc, char *argv[])
 {
@@ -87,18 +91,19 @@ int main(int argc, char *argv[])
     }
 
     //printf("input: %s\noutput: %s\ndflag: %d\n",ifile_name,ofile_name,dflag);
-
+	
  /********************************-----------------------------------------------------------------------------********************************/
     queue bg0, bg1, bg2, bg3; // creates 4 queues for each bank group
     struct addmap temp;
     int current_time = 0; // time kept track in this function
     bool pendingRQ = false;
+    int time_diff;
     FILE *ifp;       //input file pointer
     FILE *ofp;       //output file pointer
     int request_time=-1, op=-1;    //request_time will hold the time of an instruction and op will hold the type of instruction
     char cmd[64];           //Used in Switch/Case to determine the commands name (READ, WRITE, FETCH)
     long long addrs;    //addrs will hold the hexadecimal address value
-	  char buff[1024];
+	char buff[1024];
 
     ifp = fopen(ifile_name,"r");
 
@@ -106,19 +111,19 @@ int main(int argc, char *argv[])
         cout << "Error: Couldn't open input file\n" << endl;
         exit(-1);
     }
-
-	 ofp = fopen(ofile_name,"w");
-
-	 if(ofp==NULL){
+	
+	ofp = fopen(ofile_name,"w");
+	
+	if(ofp==NULL){
         cout << "Error: Couldn't open output file\n" << endl;
-		    fclose(ifp);
+		fclose(ifp);
         exit(-1);
     }
 
     //Do While() loop parses the inputs from a file (Cycle, Operation, and Address)
     do{
-    	if(queue_total(bg0, bg1, bg2, bg3) < 16) // if queues total not full
-    	{
+    	//if((bg0.size() + bg1.size() + bg2.size() + bg3.size()) < 16) // if queues total not full
+    	//{
     		if(!pendingRQ)
     		{
         		fscanf(ifp,"%d %d 0x%llX", &request_time, &op, &addrs);
@@ -136,78 +141,82 @@ int main(int argc, char *argv[])
                 	    break;
             		case 2: strcpy(cmd,"Instruction FETCH");
                 	    break;
-        	  }
+        		}
 				temp = mapit(addrs);  //temp struct will acquire mapping vals with the function mapit()
 				if(dflag==1){ //if debugging flag (-d) is present, then print parsed inputs.
             		printf("Time: %d\nOperation: %d (%s)\nAddress: 0x%09llX\n", request_time, op, cmd, addrs);
-					printf("row: %d | Hi_col: %d | BG: %d | Bank: %d | Low_col: %d\n", temp.row, temp.hcol, temp.bg, temp.bank, temp.lcol);
-                    cout << "cout request_time: " << request_time << " op: " << op << "   *******this confirms the 2 values \n" << endl;
+					printf("row: %d | Hi_col: %d | BG: %d | Bank: %d | Low_col: %d\n\n", temp.row, temp.hcol, temp.bg, temp.bank, temp.lcol);
 				}
 				pendingRQ = true;
 			}
 			if(pendingRQ)
 			{
-				if(queue_total(bg0, bg1, bg2, bg3) == 0) {// all queues are empty
-					current_time = request_time;
-					cout << "queues are empty, skip ahead to request time\n\n";
+				if((bg0.size() + bg1.size() + bg2.size() + bg3.size()) == 0) {// all queues are empty
+					current_time = request_time; //skip ahead in time
 				}
 				if(current_time >= request_time)
 				{
-					cout << "PUTTING IN QUEUE\n";
+					time_diff = current_time - request_time;//currently saved as CPU clocks..
 					if(temp.bg == 0){
-						cout << "****MATCHED***  BG0! RQ time: " << request_time << " op: " << op << " insert into list" <<endl << endl;
-						bg0.add(request_time, op, temp);
+						bg0.add(request_time, time_diff, op, temp);
 						pendingRQ = false;
+                        current_time = process_request(temp,request_time,op, current_time, ofp);
 					}
 					else if(temp.bg == 1){
-						cout << "****MATCHED***  BG1! RQ time: " << request_time << " op: " << op << endl << endl;
-						bg1.add(request_time, op, temp);
+						bg1.add(request_time, time_diff, op, temp);
 						pendingRQ = false;
-					}
+                        current_time = process_request(temp, request_time, op, current_time, ofp);
+                    }
 					else if(temp.bg == 2){
-						cout << "****MATCHED***  BG2! RQ time: " << request_time << " op: " << op << endl << endl;
-						bg2.add(request_time, op, temp);
+						bg2.add(request_time, time_diff, op, temp);
 						pendingRQ = false;
-					}
+                        current_time = process_request(temp, request_time, op, current_time, ofp);
+                    }
 					else if(temp.bg == 3){
-						cout << "****MATCHED***  BG3! RQ time: " << request_time << " op: " << op << endl << endl;
-						bg3.add(request_time, op, temp);
+						bg3.add(request_time, time_diff, op, temp);
 						pendingRQ = false;
-					}
-				}
-			}
-		}
-		//if DRAMTick
-			//process_request();
-		current_time++;
-	}while(!feof(ifp) || pendingRQ); //|| (queue_total(bg0, bg1, bg2, bg3) != 0) //end of do while loop
+                        current_time = process_request(temp, request_time, op, current_time, ofp);
+                    }
+                }
 
-  fclose(ifp); //close the input file
+			}
+		//}
+
+		if(current_time % 2 == 0) //DRAMTick
+		{
+			//process_request(); sets queue status registers, writes out when time counts down
+			if(bg0.size())//if size isn't 0
+				bg0.update_time(); //adds one to each item in queue
+			if(bg1.size())//if size isn't 0
+				bg1.update_time(); //adds one to each item in queue
+			if(bg2.size())//if size isn't 0
+				bg2.update_time(); //adds one to each item in queue
+			if(bg3.size())//if size isn't 0
+				bg3.update_time(); //adds one to each item in queue
+		}
+		current_time++;
+    } while (!feof(ifp));// || pendingRQ); //|| (queue_total(bg0, bg1, bg2, bg3) != 0) //end of do while loop
+
+    fclose(ifp); //close the input file
 	fclose(ofp); //close the output file
 
-	bg0.display_all();
+	/*bg0.display_all();
 	cout << "bg0 count: " << bg0.size() << endl;
-	//bg1.display_all();
+	bg1.display_all();
 	cout << "bg1 count: " << bg1.size() << endl;
-	//bg2.display_all();
+	bg2.display_all();
 	cout << "bg2 count: " << bg2.size() << endl;
-	//bg3.display_all();
-	cout << "bg3 count: " << bg3.size() << endl;
+	bg3.display_all();
+	cout << "bg3 count: " << bg3.size() << endl;*/
     return 0;
 }
 
-//this function cleans up the code a bit, it returns the total size across all 4 queues
-int queue_total(queue bg0, queue bg1, queue bg2, queue bg3)
-{
-	int total = bg0.size() + bg1.size() + bg2.size() + bg3.size();
-	return total;
-}
 
 /*
- *	mapit(long long addr) - determines and maps the vals of each field
+ *	mapit(long long addr) - determines and maps the vals of each field 
  *							and returns a struct of type addmap the holds
  *							the fields: row, high col, BG, bank, and low col
- *
+ *							
  *	@param	long long addr - is the full hex address parsed from input file.
  */
 struct addmap mapit(long long addr){
@@ -218,4 +227,53 @@ struct addmap mapit(long long addr){
 	mapped.bank = ((addr & 0x000000300) >> 8);
 	mapped.lcol = ((addr & 0x000000038) >> 3);
 	return mapped;
+}
+
+
+
+int process_request(addmap temp,int request_time,int op, int current_time, FILE *ofp) {
+    int proc_time = current_time;
+
+    proc_time += 2 * 24;  //tRP
+    write_out(PRE, temp,proc_time, ofp);
+
+    proc_time += 2 * 24;  //tRCD
+    write_out(ACT, temp, proc_time, ofp);
+
+    if (op == 0) {  //if READ
+        proc_time += 2 * (24 + 4);
+        write_out(RD, temp, proc_time, ofp);
+    }
+    else if (op == 1) { //if WRITE
+        proc_time += 2 * (20 + 4);
+        write_out(WR, temp, proc_time, ofp);
+    }
+    else if (op == 2) { // if Instruction Fetch
+        proc_time += 2 * (24 + 4);
+        write_out(RD, temp, proc_time, ofp);
+    }
+    fprintf(ofp, "\n");
+
+    return proc_time;
+}
+
+
+void write_out(int cmd, addmap temp, int proc_time, FILE *ofp) {
+    if (cmd == PRE) { //PRE
+        fprintf(ofp, "%d\tPRE %X %X\n", proc_time, temp.bg, temp.bank);
+    }
+    else if (cmd == ACT) { //ACT
+        fprintf(ofp, "%d\tACT %X %X %04X\n", proc_time, temp.bg, temp.bank, temp.row);
+    }
+    else if (cmd == RD) { //RD
+        fprintf(ofp, "%d\tRD %X %X %02X\n", proc_time, temp.bg, temp.bank, temp.hcol);
+    }
+    else if (cmd == WR) { //WR
+        fprintf(ofp, "%d\tWR %X %X %02X\n", proc_time, temp.bg, temp.bank, temp.hcol);
+    }
+    else if (cmd == REF) { //REF
+        fprintf(ofp, "REF\n");
+    }
+    return;
+
 }

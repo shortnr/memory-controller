@@ -1,0 +1,7 @@
+instruction fetch higher priority
+check against malformed input files
+input pause when queue is full
+same race time - requests come in at same time
+
+one mem ref to make sure correctly mapped
+two mem refs for open page, to make sure page hit

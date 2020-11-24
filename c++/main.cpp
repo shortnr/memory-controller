@@ -1,222 +1,145 @@
 // ECE 485/585 Final Project
 
-#include "queue.h"
 #include <iostream>
 #include <fstream>
 #include <stdlib.h>
 #include <string.h>
 #include <bitset>
+#include <stdio.h>
+#include "controller.h"
+#include "constants.h"
 
 using namespace std;
 
-
-/*
- *	mapit(long long addr) - determines and maps the vals of each field 
- *							and returns a struct of type addmap the holds
- *							the fields: row, high col, BG, bank, and low col
- *							
- *	@param	long long addr - is the full hex address parsed from input file.
- */
+// Function prototypes.
 struct addmap mapit(long long addr);
-int queue_total(queue bg0, queue bg1, queue bg2, queue bg3); //
-int process_request(addmap temp, int request_time, int op, int current_time, FILE* ofp);
-void write_out(int cmd, addmap temp, int proc_time, FILE* ofp);
-
-
 
 int main(int argc, char *argv[])
 {
-    char ifile_name[64];  //will hold the input file name
-    char ofile_name[64];  //will hold the output file name
-    int dflag=0;          //debugging flag. (default 0; debug mode off)
-
-    //Checks the number of entered arguments
-    if(argc<5){
-        printf("Error: Missing argument(s)\n\tUse: -i <input_filename> -o <output_filename>\n\tUse: -d flag to enable debug mode\n");
-        exit(-1);
-    }
-    else if(argc>6){
-        printf("Error: Too many arguments\n\tUse: -i <input_filename> -o <output_filename>\n\tUse: -d flag to enable debug mode\n");
-        exit(-1);
-    }
-
-    int i=0;  //loop index
-
-    int iarg=0, oarg=0;  //used to check if -i and -o are present as arguments
-    for(i=1; i<argc;i++){   //This loops check if '-i' and '-o' are present
-        if (strcmp(argv[i],"-i")==0){
-            iarg=1;
-        }
-        if (strcmp(argv[i],"-o")==0){
-            oarg=1;
-        }
-    }
-
-    if(iarg==0){
-        printf("Error: Missing '-i <filename>' argument\n\tUse: -i <input_filename> -o <output_filename>\n\tUse: -d flag to enable debug mode\n");
-        exit(-1);
-    }
-    if(oarg==0){
-        printf("Error: Missing '-o <filename>' argument\n\tUse: -i <input_filename> -o <output_filename>\n\tUse: -d flag to enable debug mode\n");
-        exit(-1);
-    }
-
-
-    for(i=1; i<argc; i++){
-        //Checks for input file name
-        if((strcmp(argv[i],"-i")==0)&& (i<(argc-1))){
-            if((strcmp(argv[i+1],"-o")!=0)&&(strcmp(argv[i+1],"-d")!=0)){
-                strcpy(ifile_name,argv[i+1]);
-                i++;
-            }
-        }
-
-        //Checks for output file name
-        else if((strcmp(argv[i],"-o")==0)&& (i<(argc-1))){
-            if((strcmp(argv[i+1],"-i")!=0)&&(strcmp(argv[i+1],"-d")!=0)){
-                strcpy(ofile_name,argv[i+1]);
-                i++;
-            }
-        }
-
-        //Checks for Debugging flag
-        else if(strcmp(argv[i],"-d")==0){
-            dflag = 1;  //set debug mode ON; default OFF
-        }
-
-        else{
-            printf("Error: Invalid or Missing argument(s) found\n\tUse: -i <input_filename> -o <output_filename>\n\tUse: -d flag to enable debug mode\n");
-            exit(-1);
-        }
-    }
-
-    //printf("input: %s\noutput: %s\ndflag: %d\n",ifile_name,ofile_name,dflag);
-	
- /********************************-----------------------------------------------------------------------------********************************/
-    queue bg0, bg1, bg2, bg3; // creates 4 queues for each bank group
-    struct addmap temp;
-    int current_time = 0; // time kept track in this function
-    bool pendingRQ = false;
-    int time_diff;
+    // Variables to handle arguments and file I/O.
+    char iFileName[64];    // will hold the input file name
+    char oFileName[64];    // will hold the output file name
+    bool dFlag = false;     //
+    bool iFlag = false;     // argument flags
+    bool oFlag = false;     //
     FILE *ifp;       //input file pointer
     FILE *ofp;       //output file pointer
-    int request_time=-1, op=-1;    //request_time will hold the time of an instruction and op will hold the type of instruction
-    char cmd[64];           //Used in Switch/Case to determine the commands name (READ, WRITE, FETCH)
-    long long addrs;    //addrs will hold the hexadecimal address value
-	char buff[1024];
 
-    ifp = fopen(ifile_name,"r");
+    // This loop checks if '-i', '-o', and '-d' are present.
+    for(int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-i") == 0) {
+            if ((strcmp(argv[i + 1], "-o") != 0) && (strcmp(argv[i + 1], "-d") != 0)) {
+                strcpy(iFileName, argv[i + 1]);
+                iFlag = true;
+            }
+        }
+        if (strcmp(argv[i], "-o") == 0) {
+            if ((strcmp(argv[i + 1], "-i") != 0) && (strcmp(argv[i + 1], "-d") != 0)) {
+                strcpy(oFileName, argv[i + 1]);
+                oFlag = true;
+            }
+        }
+        if (strcmp(argv[i], "-d") == 0) dFlag = true;
+    }
 
-    if(ifp==NULL){
+    // Checks if all arguments are valid. Exit with error if not.
+    if (argc < 5 || argc > 6 || !iFlag || !oFlag || (argc % 2 == 0 && !dFlag)) {
+      printf("Error: Invalid arguments.\n\tUse: -i <input_filename> "
+             "-o <output_filename>\n\tUse: -d flag to enable debug mode\n");
+      exit(-1);
+    }
+
+    // Open input file. Error and exit on fail.
+    if((ifp = fopen(iFileName,"r")) == NULL) {
         cout << "Error: Couldn't open input file\n" << endl;
         exit(-1);
     }
-	
-	ofp = fopen(ofile_name,"w");
-	
-	if(ofp==NULL){
+
+    // Open output file. Error and exit on fail.
+	if((ofp = fopen(oFileName,"w")) == NULL) {
         cout << "Error: Couldn't open output file\n" << endl;
 		fclose(ifp);
         exit(-1);
     }
 
+    //
+    //  "Business end" of main. Declare variables associated with memory
+    //  controller logic. Loops, receiving requests in at correct CPU time
+    //  (or nearest DRAM time) until queue is full. Processes memory
+    //  requests in tandem with receiving requests.
+    //
+    Controller controller;
+    addmap temp;     // Address mapping struct.
+    int currentTime = 0;    // Current time in CPU clocks.
+    int totalEnqueued = 0;  // Total requests in all queues.
+    bool pendingRQ = false; // Is there a request waiting?
+    int requestTime = -1;   // Time request was issued.
+    int op = -1;            // Type of request (read/write/fetch)
+    long long addrs;        // Hexidecimal address of request.
+
     //Do While() loop parses the inputs from a file (Cycle, Operation, and Address)
     do{
-    	//if((bg0.size() + bg1.size() + bg2.size() + bg3.size()) < 16) // if queues total not full
-    	//{
+        if(!controller.IsFull()) // if queues total not full
+    	{
     		if(!pendingRQ)
     		{
-        		fscanf(ifp,"%d %d 0x%llX", &request_time, &op, &addrs);
-        		//if statement below checks the validity of operation digit.
-       			if((op>2) || (op<0)){
-        	    	printf("Error: Invalid Operation at Time %d\n", request_time);
+                fscanf(ifp,"%d %d 0x%llX", &requestTime, &op, &addrs);
+                //printf("EOF? %d\n", feof(ifp));
+                //if statement below checks the validity of operation digit.
+       			if( op>2 || op<0) {
+        	    	printf("Error: Invalid Operation at Time %d\n", requestTime);
        	    		fclose(ifp);
        	    		exit(-1);
         		}
-        		//Determine the commands name (i.e. op=0 -> Data READ)
-        		switch(op){
-            		case 0: strcpy(cmd,"Data READ");
-                	    break;
-            		case 1: strcpy(cmd,"Data WRITE");
-                	    break;
-            		case 2: strcpy(cmd,"Instruction FETCH");
-                	    break;
-        		}
+
 				temp = mapit(addrs);  //temp struct will acquire mapping vals with the function mapit()
-				if(dflag==1){ //if debugging flag (-d) is present, then print parsed inputs.
-            		printf("Time: %d\nOperation: %d (%s)\nAddress: 0x%09llX\n", request_time, op, cmd, addrs);
+				if(dFlag) { //if debugging flag (-d) is present, then print parsed inputs.
+            		printf("Time: %d\nOperation: %d (%s)\nAddress: 0x%09llX\n", requestTime, op, reqTypes[op], addrs);
 					printf("row: %d | Hi_col: %d | BG: %d | Bank: %d | Low_col: %d\n\n", temp.row, temp.hcol, temp.bg, temp.bank, temp.lcol);
 				}
-				pendingRQ = true;
+                if (!feof(ifp)) {
+                    pendingRQ = true;
+                }
 			}
 			if(pendingRQ)
 			{
-				if((bg0.size() + bg1.size() + bg2.size() + bg3.size()) == 0) {// all queues are empty
-					current_time = request_time; //skip ahead in time
-				}
-				if(current_time >= request_time)
+				//if(controller.IsEmpty()) {// all queues are empty
+				//	currentTime = requestTime; //skip ahead in time
+				//}
+				if(currentTime >= requestTime)
 				{
-					time_diff = current_time - request_time;//currently saved as CPU clocks..
-					if(temp.bg == 0){
-						bg0.add(request_time, time_diff, op, temp);
-						pendingRQ = false;
-                        current_time = process_request(temp,request_time,op, current_time, ofp);
-					}
-					else if(temp.bg == 1){
-						bg1.add(request_time, time_diff, op, temp);
-						pendingRQ = false;
-                        current_time = process_request(temp, request_time, op, current_time, ofp);
-                    }
-					else if(temp.bg == 2){
-						bg2.add(request_time, time_diff, op, temp);
-						pendingRQ = false;
-                        current_time = process_request(temp, request_time, op, current_time, ofp);
-                    }
-					else if(temp.bg == 3){
-						bg3.add(request_time, time_diff, op, temp);
-						pendingRQ = false;
-                        current_time = process_request(temp, request_time, op, current_time, ofp);
-                    }
-                }
-
+					controller.Add(requestTime, op, temp);
+                    pendingRQ = false;
+                    currentTime = controller.ProcessRequests(currentTime, ofp);
+				}
 			}
-		//}
-
-		if(current_time % 2 == 0) //DRAMTick
-		{
-			//process_request(); sets queue status registers, writes out when time counts down
-			if(bg0.size())//if size isn't 0
-				bg0.update_time(); //adds one to each item in queue
-			if(bg1.size())//if size isn't 0
-				bg1.update_time(); //adds one to each item in queue
-			if(bg2.size())//if size isn't 0
-				bg2.update_time(); //adds one to each item in queue
-			if(bg3.size())//if size isn't 0
-				bg3.update_time(); //adds one to each item in queue
 		}
-		current_time++;
-    } while (!feof(ifp));// || pendingRQ); //|| (queue_total(bg0, bg1, bg2, bg3) != 0) //end of do while loop
+
+		if(currentTime % 2 == 0) //DRAMTick
+		{
+            controller.updateQ(); //update q_time of each bank group's queue
+		}
+
+		currentTime++;
+	} while(!feof(ifp) || pendingRQ); // end of do while loop
+
+    /*if(dFlag) {
+        controller.DisplayAll();
+    }*/
 
     fclose(ifp); //close the input file
 	fclose(ofp); //close the output file
-
-	/*bg0.display_all();
-	cout << "bg0 count: " << bg0.size() << endl;
-	bg1.display_all();
-	cout << "bg1 count: " << bg1.size() << endl;
-	bg2.display_all();
-	cout << "bg2 count: " << bg2.size() << endl;
-	bg3.display_all();
-	cout << "bg3 count: " << bg3.size() << endl;*/
-    return 0;
+    fclose(stdin);
+    fclose(stdout);
+    fclose(stderr);
+	return 0;
 }
 
-
 /*
- *	mapit(long long addr) - determines and maps the vals of each field 
+ *	mapit(long long addr) - determines and maps the vals of each field
  *							and returns a struct of type addmap the holds
  *							the fields: row, high col, BG, bank, and low col
- *							
+ *
  *	@param	long long addr - is the full hex address parsed from input file.
  */
 struct addmap mapit(long long addr){
@@ -227,53 +150,4 @@ struct addmap mapit(long long addr){
 	mapped.bank = ((addr & 0x000000300) >> 8);
 	mapped.lcol = ((addr & 0x000000038) >> 3);
 	return mapped;
-}
-
-
-
-int process_request(addmap temp,int request_time,int op, int current_time, FILE *ofp) {
-    int proc_time = current_time;
-
-    proc_time += 2 * 24;  //tRP
-    write_out(PRE, temp,proc_time, ofp);
-
-    proc_time += 2 * 24;  //tRCD
-    write_out(ACT, temp, proc_time, ofp);
-
-    if (op == 0) {  //if READ
-        proc_time += 2 * (24 + 4);
-        write_out(RD, temp, proc_time, ofp);
-    }
-    else if (op == 1) { //if WRITE
-        proc_time += 2 * (20 + 4);
-        write_out(WR, temp, proc_time, ofp);
-    }
-    else if (op == 2) { // if Instruction Fetch
-        proc_time += 2 * (24 + 4);
-        write_out(RD, temp, proc_time, ofp);
-    }
-    fprintf(ofp, "\n");
-
-    return proc_time;
-}
-
-
-void write_out(int cmd, addmap temp, int proc_time, FILE *ofp) {
-    if (cmd == PRE) { //PRE
-        fprintf(ofp, "%d\tPRE %X %X\n", proc_time, temp.bg, temp.bank);
-    }
-    else if (cmd == ACT) { //ACT
-        fprintf(ofp, "%d\tACT %X %X %04X\n", proc_time, temp.bg, temp.bank, temp.row);
-    }
-    else if (cmd == RD) { //RD
-        fprintf(ofp, "%d\tRD %X %X %02X\n", proc_time, temp.bg, temp.bank, temp.hcol);
-    }
-    else if (cmd == WR) { //WR
-        fprintf(ofp, "%d\tWR %X %X %02X\n", proc_time, temp.bg, temp.bank, temp.hcol);
-    }
-    else if (cmd == REF) { //REF
-        fprintf(ofp, "REF\n");
-    }
-    return;
-
 }

@@ -136,11 +136,23 @@ int Queue::process_request(int current_time, FILE* ofp) {
 
     int time = current_time;
 
-    time += 2 * (tRP);
-    write_out(time, PRE, current, ofp);
+    if (banks[current->bank].activeRow!=-1) {
+        if (banks[current->bank].activeRow != current->row) {
+            banks[current->bank].precharged = false;
+        }
+    }
 
-    time += 2 * (tRCD);
-    write_out(time, ACT, current, ofp);
+    if(banks[current->bank].precharged==false){
+        time += 2 * (tRP);
+        banks[current->bank].precharged = true;
+        write_out(time, PRE, current, ofp);
+    }
+
+    if(banks[current->bank].activeRow != current->row){
+        time += 2 * (tRCD);
+        banks[current->bank].activeRow = current->row;
+        write_out(time, ACT, current, ofp);
+    }
 
     if (current->cmd == 0) {  //if READ
         time += 2 * (24 + 4);
@@ -150,7 +162,7 @@ int Queue::process_request(int current_time, FILE* ofp) {
         time += 2 * (20 + 4);
         write_out(time, WR, current, ofp);
     }
-    else if (current->cmd == 2) { // if Instruction Fetch
+    else if (current->cmd == 2) { //if Instruction Fetch
         time += 2 * (24 + 4);
         write_out(time, RD, current, ofp);
     }

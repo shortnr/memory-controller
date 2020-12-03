@@ -97,15 +97,15 @@ int main(int argc, char *argv[])
             		printf("Time: %d\nOperation: %d (%s)\nAddress: 0x%09llX\n", requestTime, op, reqTypes[op], addrs);
 					printf("row: %d | Hi_col: %d | BG: %d | Bank: %d | Low_col: %d\n\n", temp.row, temp.hcol, temp.bg, temp.bank, temp.lcol);
 				}
-                if (!feof(ifp)) {
-                    pendingRQ = true;
-                }
+          
+                pendingRQ = true;
+            
 			}
 			if(pendingRQ)
 			{
-				//if(controller.IsEmpty()) {// all queues are empty
-				//	currentTime = requestTime; //skip ahead in time
-				//}
+				if((controller.IsEmpty())&&(requestTime>currentTime)) {// all queues are empty
+					currentTime = requestTime; //skip ahead in time
+				}
 				if(currentTime >= requestTime)
 				{
 					controller.Add(requestTime, op, temp);

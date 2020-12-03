@@ -8,7 +8,7 @@ public:
     bool IsAvailable();
     void TimeStep();
 
-private:
+//private:
     bool precharged, busy;
     int activeRow, timeUntilAvail;
     Command lastCommand;

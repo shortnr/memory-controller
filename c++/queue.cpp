@@ -143,28 +143,28 @@ int Queue::process_request(int current_time, FILE* ofp) {
     }
 
     if(banks[current->bank].precharged==false){
+        write_out(time, PRE, current, ofp);
         time += 2 * (tRP);
         banks[current->bank].precharged = true;
-        write_out(time, PRE, current, ofp);
     }
 
     if(banks[current->bank].activeRow != current->row){
+        write_out(time, ACT, current, ofp);
         time += 2 * (tRCD);
         banks[current->bank].activeRow = current->row;
-        write_out(time, ACT, current, ofp);
     }
 
     if (current->cmd == 0) {  //if READ
-        time += 2 * (24 + 4);
         write_out(time, RD, current, ofp);
+        time += 2 * (24 + 4);
     }
     else if (current->cmd == 1) { //if WRITE
-        time += 2 * (20 + 4);
         write_out(time, WR, current, ofp);
+        time += 2 * (20 + 4);
     }
     else if (current->cmd == 2) { //if Instruction Fetch
-        time += 2 * (24 + 4);
         write_out(time, RD, current, ofp);
+        time += 2 * (24 + 4);
     }
 
     return time;

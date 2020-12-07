@@ -163,16 +163,16 @@ int Queue::process_request(int current_time, FILE* ofp) {
 
 void Queue::write_out(int time, int cmd, reference* request, FILE* ofp) {
     if (cmd == PRE) { //PRE
-        fprintf(ofp, "%d\tPRE %X %X\n", time, request->bg, request->bank);
+        fprintf(ofp, "%-6d PRE %X %X\n", time, request->bg, request->bank);
     }
     else if (cmd == ACT) { //ACT
-        fprintf(ofp, "%d\tACT %X %X %04X\n", time, request->bg, request->bank, request->row);
+        fprintf(ofp, "%-6d ACT %X %X %-4X\n", time, request->bg, request->bank, request->row);
     }
     else if (cmd == RD) { //RD
-        fprintf(ofp, "%d\tRD %X %X %02X\n", time, request->bg, request->bank, request->hcol);
+        fprintf(ofp, "%-6d RD  %X %X %-2X\n", time, request->bg, request->bank, request->hcol);
     }
     else if (cmd == WR) { //WR
-        fprintf(ofp, "%d\tWR %X %X %02X\n", time, request->bg, request->bank, request->hcol);
+        fprintf(ofp, "%-6d WR  %X %X %-2X\n", time, request->bg, request->bank, request->hcol);
     }
     else if (cmd == REF) { //REF
         fprintf(ofp, "REF\n");

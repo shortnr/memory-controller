@@ -50,7 +50,7 @@ int Controller::ProcessRequests(int current_time, FILE* ofp)
     //printf("temp: %d\n\n", temp);
     currentTime = bankGroups[item].process_request(currentTime, ofp);
 
-    fprintf(ofp, "\n");
+    //fprintf(ofp, "\n");
 
     bankGroups[item].Remove(temp);
 

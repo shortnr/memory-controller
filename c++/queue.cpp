@@ -90,19 +90,8 @@ void Queue::Remove(int referenceToDelete) {
         current = current->next;
     }
 
-    // If target reference is not the last reference in the queue,
-    // link previous reference to next reference, else NULL.
-    //if (current->next != NULL) { 
-    //    previous->next = current->next; 
-    //}
-    //else { 
-    //    //previous = current->next;
-
-    //}
-    current->processed = true;
-
     // Delete target and decrement count.
-    //delete current;
+    current->processed = true;    
     count -= 1;
 }
 
@@ -156,15 +145,15 @@ int Queue::process_request(int current_time, FILE* ofp) {
 
     if (current->cmd == 0) {  //if READ
         write_out(time, RD, current, ofp);
-        time += 2 * (24 + 4);
+        time += 2 * (tCAS + 4);
     }
     else if (current->cmd == 1) { //if WRITE
         write_out(time, WR, current, ofp);
-        time += 2 * (20 + 4);
+        time += 2 * (tCWD + 4);
     }
     else if (current->cmd == 2) { //if Instruction Fetch
         write_out(time, RD, current, ofp);
-        time += 2 * (24 + 4);
+        time += 2 * (tCAS + 4);
     }
 
     return time;

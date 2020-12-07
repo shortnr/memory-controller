@@ -76,14 +76,18 @@ int main(int argc, char *argv[])
     int requestTime = -1;   // Time request was issued.
     int op = -1;            // Type of request (read/write/fetch)
     long long addrs;        // Hexidecimal address of request.
+    int args = 0;           // Determines # of arguments read from a line in input file
 
     //Do While() loop parses the inputs from a file (Cycle, Operation, and Address)
     do{
         if(!controller.IsFull()) // if queues total not full
     	{
     		if(!pendingRQ)
-    		{
-                fscanf(ifp,"%d %d 0x%llX", &requestTime, &op, &addrs);
+            {
+                args = fscanf(ifp,"%d %d 0x%llX", &requestTime, &op, &addrs);
+                if (args < 0) { //EOF
+                    exit(-1);
+                }
                 //printf("EOF? %d\n", feof(ifp));
                 //if statement below checks the validity of operation digit.
        			if( op>2 || op<0) {
@@ -102,7 +106,7 @@ int main(int argc, char *argv[])
             
 			}
 			if(pendingRQ)
-			{
+            {
 				if((controller.IsEmpty())&&(requestTime>currentTime)) {// all queues are empty
 					currentTime = requestTime; //skip ahead in time
 				}

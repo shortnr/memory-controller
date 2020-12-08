@@ -91,13 +91,13 @@ void Queue::Remove(int referenceToDelete) {
     }
 
     // Delete target and decrement count.
-    current->processed = true;    
+    current->processed = true;
     count -= 1;
 }
 
 int Queue::request_time() {
     if (!head) {
-        return -1; 
+        return -1;
     }
 
     reference* current = head;
@@ -108,11 +108,12 @@ int Queue::request_time() {
         }
         current = current->next;
     }
-    
+
     return current->requestTime;
 }
 
-int Queue::process_request(int current_time, FILE* ofp) {
+int Queue::process_request(int current_time, FILE* ofp,
+                           bool sameBankGroup, int timeSinceLastCommand) {
     reference* current = head;
 
     while (current->processed == true) {
@@ -132,36 +133,57 @@ int Queue::process_request(int current_time, FILE* ofp) {
     }
 
     if(banks[current->bank].precharged==false){
+        if(time % 2 == 1) time += 1;
         write_out(time, PRE, current, ofp);
         time += 2 * (tRP);
         banks[current->bank].precharged = true;
     }
 
     if(banks[current->bank].activeRow != current->row){
+        if(time % 2 == 1) time += 1;
         write_out(time, ACT, current, ofp);
         time += 2 * (tRCD);
         banks[current->bank].activeRow = current->row;
     }
 
     if (current->cmd == 0) {  //if READ
+        if(current->bank == lastBankRef) {
+            if(!sameBankGroup && timeSinceLastCommand / 2 < tCCD_L) {
+              time += 2 * (tCCD_L - timeSinceLastCommand / 2);
+            }
+            else if (sameBankGroup && timeSinceLastCommand / 2 < tCCD_S) {
+              time += 2 * (tCCD_S - timeSinceLastCommand / 2);
+            }
+        }
+        if(time % 2 == 1) time += 1;
         write_out(time, RD, current, ofp);
         time += 2 * (tCAS + 4);
     }
     else if (current->cmd == 1) { //if WRITE
+        if(time % 2 == 1) time += 1;
         write_out(time, WR, current, ofp);
         time += 2 * (tCWD + 4);
     }
     else if (current->cmd == 2) { //if Instruction Fetch
+      if(current->bank == lastBankRef) {
+          if(!sameBankGroup && timeSinceLastCommand / 2 < tCCD_L) {
+            time += 2 * (tCCD_L - timeSinceLastCommand / 2);
+          }
+          else if (sameBankGroup && timeSinceLastCommand / 2 < tCCD_S) {
+            time += 2 * (tCCD_S - timeSinceLastCommand / 2);
+          }
+      }
+        if(time % 2 == 1) time += 1;
         write_out(time, RD, current, ofp);
         time += 2 * (tCAS + 4);
     }
-
+    lastBankRef = current->bank;
     return time;
-
-
 }
 
 void Queue::write_out(int time, int cmd, reference* request, FILE* ofp) {
+    int column = (request->hcol << 3) + request->lcol;
+
     if (cmd == PRE) { //PRE
         fprintf(ofp, "%-6d PRE %X %X\n", time, request->bg, request->bank);
     }

@@ -47,18 +47,20 @@ int Controller::ProcessRequests(int current_time, FILE* ofp)
             item = i;
         }
     }
-    //printf("temp: %d\n\n", temp);
-    currentTime = bankGroups[item].process_request(currentTime, ofp);
 
-    //fprintf(ofp, "\n");
+    currentTime = bankGroups[item].process_request(currentTime, ofp,
+                  item == lastBankGroup, currentTime - lastCommandTime);
+
+    lastCommandTime = currentTime;
+    lastBankGroup = item;
 
     bankGroups[item].Remove(temp);
 
     return currentTime;
-   
+
 }
 
-void Controller::updateQ() 
+void Controller::updateQ()
 {
     totalEnqueued = 0;
     for (int i = 0; i < 4; i++) {

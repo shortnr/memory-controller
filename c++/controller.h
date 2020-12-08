@@ -15,4 +15,6 @@ public:
 private:
     Queue bankGroups[4];
     char totalEnqueued;
+    int lastCommandTime;
+    int lastBank, lastBankGroup;
 };

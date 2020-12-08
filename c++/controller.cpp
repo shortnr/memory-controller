@@ -34,26 +34,29 @@ int Controller::ProcessRequests(int current_time, FILE* ofp)
     int item = 0;
     int i = 0;
 
-    for (i = 0;i < 4;i++) {  //obtains request times of head-node requests
+    for (i = 0;i < 4;i++) {  // obtains request times of head-node requests
         req_times[i] = bankGroups[i].request_time();
         if (req_times[i] > -1) {
             temp = req_times[i];
         }
     }
 
-    for (i = 0;i < 4;i++) { //checks which has the min request time
+    for (i = 0;i < 4;i++) { // checks which has the min request time
         if ((req_times[i] > -1) && (req_times[i] <= temp)) {
             temp = req_times[i];
             item = i;
         }
     }
 
+    // Issues the next DRAM command and advances time to that point
     currentTime = bankGroups[item].process_request(currentTime, ofp,
-                  item == lastBankGroup, currentTime - lastCommandTime);
+                  item == lastBankGroup, currentTime - lastCommandTime, lastCmd);
 
     lastCommandTime = currentTime;
+    lastCmd = bankGroups[item].op();
     lastBankGroup = item;
 
+    // Removes request from queue when satisfied
     bankGroups[item].Remove(temp);
 
     return currentTime;
@@ -65,7 +68,6 @@ void Controller::updateQ()
     totalEnqueued = 0;
     for (int i = 0; i < 4; i++) {
         totalEnqueued += bankGroups[i].Size();
-        if (bankGroups[i].Size()) bankGroups[i].UpdateTime();
     }
 }
 

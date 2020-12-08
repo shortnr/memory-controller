@@ -5,11 +5,7 @@ class Bank
 {
 public:
     Bank();
-    bool IsAvailable();
-    void TimeStep();
 
-//private:
-    bool precharged, busy;
-    int activeRow, timeUntilAvail;
-    Command lastCommand;
+    bool precharged;
+    int activeRow;
 };

@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
         if (args < 0) { //EOF
           exit(-1);
         }
-        //printf("EOF? %d\n", feof(ifp));
+
         //if statement below checks the validity of operation digit.
         if( op>2 || op<0) {
           printf("Error: Invalid Operation at Time %d\n", requestTime);
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
         }
 
         temp = mapit(addrs);  //temp struct will acquire mapping vals with the function mapit()
-        if(dFlag) { //if debugging flag (-d) is present, then print parsed inputs.
+        if(dFlag) {           //if debugging flag (-d) is present, then print parsed inputs.
           printf("Time: %d\nOperation: %d (%s)\nAddress: 0x%09llX\n", requestTime, op, reqTypes[op], addrs);
           printf("row: %d | Hi_col: %d | BG: %d | Bank: %d | Low_col: %d\n\n", temp.row, temp.hcol, temp.bg, temp.bank, temp.lcol);
         }
@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
         {
           controller.Add(requestTime, op, temp);
           pendingRQ = false;
-          /*if(currentTime % 2 == 0) */currentTime = controller.ProcessRequests(currentTime, ofp);
+          currentTime = controller.ProcessRequests(currentTime, ofp);
         }
       }
     }

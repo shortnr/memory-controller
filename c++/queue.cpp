@@ -34,18 +34,6 @@ int Queue::Size()
     return count;
 }
 
-//adds one DIMM clock to each item in queue
-//eventually will decrease time_till_avail by 1
-void Queue::UpdateTime()
-{
-    reference * current = head;
-    while(current)
-    {
-        ++current->qTime;
-        current = current->next;
-    }
-}
-
 //adds item to end of list, plan on doing sorted insert
 void Queue::Add(reference * inRef)
 {
@@ -95,6 +83,7 @@ void Queue::Remove(int referenceToDelete) {
     count -= 1;
 }
 
+// Returns the request time of the oldest request in the queue
 int Queue::request_time() {
     if (!head) {
         return -1;
@@ -102,6 +91,7 @@ int Queue::request_time() {
 
     reference* current = head;
 
+    // Traverse the queue
     while (current->processed==true) {
         if (current->next == NULL) {
             return -1;
@@ -112,10 +102,32 @@ int Queue::request_time() {
     return current->requestTime;
 }
 
-int Queue::process_request(int current_time, FILE* ofp,
-                           bool sameBankGroup, int timeSinceLastCommand) {
+// Returns the operation of the oldest request in the queue
+int Queue::op() {
+    if (!head) {
+        return -1;
+    }
+
     reference* current = head;
 
+    // Traverse the queue
+    while (current->processed == true) {
+        if (current->next == NULL) {
+            return -1;
+        }
+        current = current->next;
+    }
+
+    return current->cmd;
+}
+
+// Processes the oldest request in the queue. Open page policy, only precharges
+// and activates if request is to a different row.
+int Queue::process_request(int current_time, FILE* ofp,
+                           bool sameBankGroup, int timeSinceLastCommand, int lastCMD) {
+    reference* current = head;
+
+    // Traverses queue until the oldest unserviced memory reference
     while (current->processed == true) {
         if (current->next == NULL) {
             return current_time;
@@ -125,62 +137,148 @@ int Queue::process_request(int current_time, FILE* ofp,
     }
 
     int time = current_time;
+    bool activated = false;
 
+    // Clear "precharged" flag if reference to different row
     if (banks[current->bank].activeRow!=-1) {
         if (banks[current->bank].activeRow != current->row) {
             banks[current->bank].precharged = false;
         }
     }
 
+    // Precharges if necessary and outputs PRE command to output file
     if(banks[current->bank].precharged==false){
-        if(time % 2 == 1) time += 1;
+        //if(time % 2 == 1) time += 1;
         write_out(time, PRE, current, ofp);
         time += 2 * (tRP);
         banks[current->bank].precharged = true;
     }
 
+    // Activates new row if necessary and outputs ACT command to output file
     if(banks[current->bank].activeRow != current->row){
-        if(time % 2 == 1) time += 1;
+        if ((timeSinceLastCommand<(2*(tCAS+tBURST))) || (timeSinceLastCommand < (2 * (tCWD + tBURST)))) {
+            if (lastCMD == 0 || lastCMD == 2) {
+                time += 2 * (tCAS + tBURST);
+            }
+            else if (lastCMD == 1) {
+                time += 2 * (tCWD + tBURST);
+            }
+        }
         write_out(time, ACT, current, ofp);
         time += 2 * (tRCD);
         banks[current->bank].activeRow = current->row;
+        activated = true;
+        lastCMD = -1;
     }
 
+    // Outputs RD (for read or fetch), or WR (for write) command to the
+    // output file
     if (current->cmd == 0) {  //if READ
-        if(current->bank == lastBankRef) {
-            if(!sameBankGroup && timeSinceLastCommand / 2 < tCCD_L) {
-              time += 2 * (tCCD_L - timeSinceLastCommand / 2);
+        if(!activated) {
+            if (lastCMD == 0 || lastCMD == 2) {
+                if (!sameBankGroup) {
+                    if (timeSinceLastCommand < (2 * (tCCD_S + tBURST) )) {
+                        // Reference to different BG; tCCD_S
+                        time += 2 * (tCCD_S + tBURST);
+                    }
+                }
+                else if (sameBankGroup) {
+                    if (timeSinceLastCommand < (2 * (tCCD_L + tBURST) )) {
+                        // Reference to same BG; tCCD_L
+                        time += 2 * (tCCD_L + tBURST);
+                    }
+                }
             }
-            else if (sameBankGroup && timeSinceLastCommand / 2 < tCCD_S) {
-              time += 2 * (tCCD_S - timeSinceLastCommand / 2);
+            else if (lastCMD == 1) {
+                if (!sameBankGroup) {
+                    if (timeSinceLastCommand < (2 * (tWTR_S + tBURST))) {
+                        // Reference to different BG; tWTR_S
+                        time += 2 * (tWTR_S + tBURST);
+                    }
+                }
+                else if (sameBankGroup) {
+                    if (timeSinceLastCommand < (2 * (tCCD_L + tBURST) )) {
+                        // Reference to same BG; tWTR_L
+                        time += 2 * (tWTR_L + tBURST);
+                    }
+                }
             }
+            write_out(time, RD, current, ofp);
+            lastCMD = 0;
         }
-        if(time % 2 == 1) time += 1;
-        write_out(time, RD, current, ofp);
-        time += 2 * (tCAS + 4);
+        else { //if last cmd in ACT then just count for tCAS instead of tCCD
+            if (time % 2 == 1) time += 1;
+            lastCMD = 0;
+            write_out(time, RD, current, ofp);
+            //time += 2 * (tCAS + tBURST);
+        }
     }
     else if (current->cmd == 1) { //if WRITE
-        if(time % 2 == 1) time += 1;
-        write_out(time, WR, current, ofp);
-        time += 2 * (tCWD + 4);
+        if (!activated) {
+            if (lastCMD == 0 || lastCMD == 2) {
+                if (timeSinceLastCommand <(2 * (tCAS + tBURST))) {
+                    time += 2 * (tCAS + tBURST);
+                }
+            }
+            else if (lastCMD == 1) {
+                if (timeSinceLastCommand < (2 * (tCWD + tBURST))) {
+                    time += 2 * (tCWD + tBURST);
+                }
+            }
+            write_out(time, WR, current, ofp);
+            lastCMD = 0;
+        }
+        else { //if last cmd in ACT then just count for tCAS instead of tCCD
+            if (time % 2 == 1) time += 1;
+            lastCMD = 0;
+            write_out(time, WR, current, ofp);
+        }
     }
     else if (current->cmd == 2) { //if Instruction Fetch
-      if(current->bank == lastBankRef) {
-          if(!sameBankGroup && timeSinceLastCommand / 2 < tCCD_L) {
-            time += 2 * (tCCD_L - timeSinceLastCommand / 2);
-          }
-          else if (sameBankGroup && timeSinceLastCommand / 2 < tCCD_S) {
-            time += 2 * (tCCD_S - timeSinceLastCommand / 2);
-          }
-      }
-        if(time % 2 == 1) time += 1;
-        write_out(time, RD, current, ofp);
-        time += 2 * (tCAS + 4);
+        if (!activated) {
+            if (lastCMD == 0 || lastCMD == 2) {
+                if (!sameBankGroup) {
+                    if (timeSinceLastCommand < (2 * (tCCD_S + tBURST))) {
+                        // Reference to different BG; tCCD_S
+                        time += 2 * (tCCD_S + tBURST);
+                    }
+                }
+                else if (sameBankGroup) {
+                    if (timeSinceLastCommand < (2 * (tCCD_L + tBURST))) {
+                        // Reference to same BG; tCCD_L
+                        time += 2 * (tCCD_L + tBURST);
+                    }
+                }
+            }
+            else if (lastCMD == 1) {
+                if (!sameBankGroup) {
+                    if (timeSinceLastCommand < (2 * (tWTR_S + tBURST))) {
+                        // Reference to different BG; tWTR_S
+                        time += 2 * (tWTR_S + tBURST);
+                    }
+                }
+                else if (sameBankGroup) {
+                    if (timeSinceLastCommand < (2 * (tCCD_L + tBURST))) {
+                        // Reference to same BG; tWTR_L
+                        time += 2 * (tWTR_L + tBURST);
+                    }
+                }
+            }
+            write_out(time, RD, current, ofp);
+            lastCMD = 0;
+        }
+        else { //if last cmd in ACT then just count for tCAS instead of tCCD
+            if (time % 2 == 1) time += 1;
+            lastCMD = 0;
+            write_out(time, RD, current, ofp);
+            //time += 2 * (tCAS + tBURST);
+        }
     }
     lastBankRef = current->bank;
     return time;
 }
 
+// Writes DRAM command out to output file
 void Queue::write_out(int time, int cmd, reference* request, FILE* ofp) {
     int column = (request->hcol << 3) + request->lcol;
 

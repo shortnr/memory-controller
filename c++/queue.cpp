@@ -137,7 +137,8 @@ int Queue::process_request(int current_time, FILE* ofp,
     }
 
     int time = current_time;
-    bool activated = false;
+    bool activated = false;  //indicates last command was ACT
+    bool precharged = false;    //indicates last command was PRE
 
     // Clear "precharged" flag if reference to different row
     if (banks[current->bank].activeRow!=-1) {
@@ -160,17 +161,23 @@ int Queue::process_request(int current_time, FILE* ofp,
         write_out(time, PRE, current, ofp);
         time += 2 * (tRP);
         banks[current->bank].precharged = true;
+        precharged = true;
     }
 
     // Activates new row if necessary and outputs ACT command to output file
     if(banks[current->bank].activeRow != current->row){
-        if ((timeSinceLastCommand<(2*(tCAS+tBURST))) || (timeSinceLastCommand < (2 * (tCWD + tBURST)))) {
-            if (lastCMD == 0 || lastCMD == 2) {
-                time += 2 * (tCAS + tBURST);
+        if (!precharged) {
+            if ((timeSinceLastCommand < (2 * (tCAS + tBURST))) || (timeSinceLastCommand < (2 * (tCWD + tBURST)))) {
+                if (lastCMD == 0 || lastCMD == 2) {
+                    time += 2 * (tCAS + tBURST);
+                }
+                else if (lastCMD == 1) {
+                    time += 2 * (tCWD + tBURST);
+                }
             }
-            else if (lastCMD == 1) {
-                time += 2 * (tCWD + tBURST);
-            }
+        }
+        if (precharged) {
+            time++;  //increment cycle by one to issues ACT command after RPE
         }
         write_out(time, ACT, current, ofp);
         time += 2 * (tRCD);
@@ -215,7 +222,7 @@ int Queue::process_request(int current_time, FILE* ofp,
             lastCMD = 0;
         }
         else { //if last cmd in ACT then just count for tCAS instead of tCCD
-            if (time % 2 == 1) time += 1;
+            time++; //increment cycle by one to issues READ command after ACT
             lastCMD = 0;
             write_out(time, RD, current, ofp);
             //time += 2 * (tCAS + tBURST);
@@ -237,7 +244,7 @@ int Queue::process_request(int current_time, FILE* ofp,
             lastCMD = 0;
         }
         else { //if last cmd in ACT then just count for tCAS instead of tCCD
-            if (time % 2 == 1) time += 1;
+            time++; //increment cycle by one to issues WRITE command after ACT
             lastCMD = 0;
             write_out(time, WR, current, ofp);
         }
@@ -276,7 +283,7 @@ int Queue::process_request(int current_time, FILE* ofp,
             lastCMD = 0;
         }
         else { //if last cmd in ACT then just count for tCAS instead of tCCD
-            if (time % 2 == 1) time += 1;
+            time++; //increment cycle by one to issues READ command after ACT
             lastCMD = 0;
             write_out(time, RD, current, ofp);
             //time += 2 * (tCAS + tBURST);

@@ -157,7 +157,7 @@ int Queue::process_request(int current_time, FILE* ofp,
                 time += 2 * (tCWD + tBURST);
             }
         }
-        //if(time % 2 == 1) time += 1;
+        if(time % 2 == 1) time += 1;
         write_out(time, PRE, current, ofp);
         time += 2 * (tRP);
         banks[current->bank].precharged = true;
@@ -179,6 +179,7 @@ int Queue::process_request(int current_time, FILE* ofp,
         if (precharged) {
             time++;  //increment cycle by one to issues ACT command after RPE
         }
+        if(time % 2 == 1) time += 1;
         write_out(time, ACT, current, ofp);
         time += 2 * (tRCD);
         banks[current->bank].activeRow = current->row;
@@ -219,6 +220,7 @@ int Queue::process_request(int current_time, FILE* ofp,
                 }
             }
             time += 2 * tCAS;
+            if(time % 2 == 1) time += 1;
             write_out(time, RD, current, ofp);
             lastCMD = 0;
         }
@@ -226,6 +228,7 @@ int Queue::process_request(int current_time, FILE* ofp,
             time++; //increment cycle by one to issues READ command after ACT
             lastCMD = 0;
             time += 2 * (tRCD + tBURST);
+            if(time % 2 == 1) time += 1;
             write_out(time, RD, current, ofp);
         }
     }
@@ -241,6 +244,7 @@ int Queue::process_request(int current_time, FILE* ofp,
                     time += 2 * (tCWD + tBURST);
                 }
             }
+            if(time % 2 == 1) time += 1;
             write_out(time, WR, current, ofp);
             lastCMD = 0;
         }
@@ -248,6 +252,7 @@ int Queue::process_request(int current_time, FILE* ofp,
             time++; //increment cycle by one to issues WRITE command after ACT
             lastCMD = 0;
             time += 2 * (tRCD + tBURST);
+            if(time % 2 == 1) time += 1;
             write_out(time, WR, current, ofp);
         }
     }
@@ -282,6 +287,7 @@ int Queue::process_request(int current_time, FILE* ofp,
                 }
             }
             time += 2 * tCAS;
+            if(time % 2 == 1) time += 1;
             write_out(time, RD, current, ofp);
             lastCMD = 0;
         }
@@ -289,6 +295,7 @@ int Queue::process_request(int current_time, FILE* ofp,
             time++; //increment cycle by one to issues READ command after ACT
             lastCMD = 0;
             time += 2 * (tRCD + tBURST);
+            if(time % 2 == 1) time += 1;
             write_out(time, RD, current, ofp);
         }
     }

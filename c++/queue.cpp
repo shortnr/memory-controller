@@ -148,6 +148,14 @@ int Queue::process_request(int current_time, FILE* ofp,
 
     // Precharges if necessary and outputs PRE command to output file
     if(banks[current->bank].precharged==false){
+        if ((timeSinceLastCommand < (2 * (tCAS + tBURST))) || (timeSinceLastCommand < (2 * (tCWD + tBURST)))) {
+            if (lastCMD == 0 || lastCMD == 2) {
+                time += 2 * (tCAS + tBURST);
+            }
+            else if (lastCMD == 1) {
+                time += 2 * (tCWD + tBURST);
+            }
+        }
         //if(time % 2 == 1) time += 1;
         write_out(time, PRE, current, ofp);
         time += 2 * (tRP);
